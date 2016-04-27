@@ -21,6 +21,10 @@ func (t *Time) Scan(value interface{}) error {
 	switch x := value.(type) {
 	case time.Time:
 		t.Time = x
+	case []byte:
+		t.Time, err = parseDateTime(string(x), time.UTC)
+	case string:
+		t.Time, err = parseDateTime(x, time.UTC)
 	case nil:
 		t.Valid = false
 		return nil
@@ -132,4 +136,28 @@ func (t Time) Ptr() *time.Time {
 		return nil
 	}
 	return &t.Time
+}
+
+// copied from https://github.com/go-sql-driver/mysql/blob/master/utils.go
+func parseDateTime(str string, loc *time.Location) (t time.Time, err error) {
+	base := "0000-00-00 00:00:00.0000000"
+	switch len(str) {
+	case 10, 19, 21, 22, 23, 24, 25, 26: // up to "YYYY-MM-DD HH:MM:SS.MMMMMM"
+		if str == base[:len(str)] {
+			return
+		}
+		t, err = time.Parse(timeFormat[:len(str)], str)
+	default:
+		err = fmt.Errorf("invalid time string: %s", str)
+		return
+	}
+
+	// Adjust location
+	if err == nil && loc != time.UTC {
+		y, mo, d := t.Date()
+		h, mi, s := t.Clock()
+		t, err = time.Date(y, mo, d, h, mi, s, t.Nanosecond(), loc), nil
+	}
+
+	return
 }
