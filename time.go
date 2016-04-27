@@ -139,6 +139,8 @@ func (t Time) Ptr() *time.Time {
 }
 
 // copied from https://github.com/go-sql-driver/mysql/blob/master/utils.go
+const timeFormat = "2006-01-02 15:04:05.999999"
+
 func parseDateTime(str string, loc *time.Location) (t time.Time, err error) {
 	base := "0000-00-00 00:00:00.0000000"
 	switch len(str) {
